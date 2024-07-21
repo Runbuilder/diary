@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>😁행복한 일기</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <style>
+        #editor {
+            height: 200px;
+        }
+        .card {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">😁행복한 일기</h1>
+        <form id="diaryForm">
+            <div class="mb-3">
+                <label for="title" class="form-label">제목</label>
+                <input type="text" class="form-control" id="title" required>
+            </div>
+            <div class="mb-3">
+                <label for="content" class="form-label">내용</label>
+                <div id="editor"></div>
+            </div>
+            <button type="submit" class="btn btn-primary">저장</button>
+        </form>
+        <hr>
+        <div class="mt-4" id="diaryList"></div>
+    </div>
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyA0b2FuxhGjJWgdNcEv9QoGv7nc3k7zbNM",
+            authDomain: "diary-3991f.firebaseapp.com",
+            projectId: "diary-3991f",
+            storageBucket: "diary-3991f.appspot.com",
+            messagingSenderId: "1064130635244",
+            appId: "1:1064130635244:web:d71196549746ca32e88cc9"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        document.addEventListener("DOMContentLoaded", function() {
+            var quill = new Quill('#editor', {
+                theme: 'snow'
+            });
+
+            const diaryForm = document.getElementById('diaryForm');
+            const diaryList = document.getElementById('diaryList');
+
+            loadDiaries();
+
+            diaryForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const title = document.getElementById('title').value;
+                const content = quill.root.innerHTML;
+                const date = new Date().toLocaleDateString();
+
+                const diaryEntry = {
+                    title: title,
+                    content: content,
+                    date: date
+                };
+
+                await saveDiaryEntry(diaryEntry);
+                addDiaryEntry(diaryEntry);
+                diaryForm.reset();
+                quill.root.innerHTML = '';
+            });
+
+            function addDiaryEntry(entry) {
+                const card = document.createElement('div');
+                card.className = 'card mb-3';
+                card.innerHTML = `
+                    <div class="card-body">
+                        <h5 class="card-title">${entry.title}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">${entry.date}</h6>
+                    </div>
+                `;
+                card.addEventListener('click', function() {
+                    Swal.fire({
+                        title: entry.title,
+                        html: entry.content,
+                        showCloseButton: true,
+                        focusConfirm: false,
+                        confirmButtonText: '닫기'
+                    });
+                });
+                diaryList.appendChild(card);
+            }
+
+            async function saveDiaryEntry(entry) {
+                try {
+                    const docRef = await addDoc(collection(db, "diaries"), entry);
+                    console.log("Document written with ID: ", docRef.id);
+                } catch (e) {
+                    console.error("Error adding document: ", e);
+                }
+            }
+
+            async function loadDiaries() {
+                const querySnapshot = await getDocs(collection(db, "diaries"));
+                querySnapshot.forEach((doc) => {
+                    addDiaryEntry(doc.data());
+                });
+            }
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</body>
+</html>
